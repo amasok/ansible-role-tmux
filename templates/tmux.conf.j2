@@ -1,0 +1,50 @@
+set-option -g default-shell /bin/zsh
+set-option -g default-terminal screen-256color
+set -g terminal-overrides 'xterm:colors=256'
+
+set-option -g prefix C-w
+bind-key C-w send-prefix
+unbind-key C-b
+#set -g status-right "#{battery_icon} #{battery_percentage} #{battery_remain} | Online: #{online_status} | CPU:#{cpu_percentage} | %a %h-%d %H:%M"
+
+# Reload statusbar
+set-option -g status-interval 1
+set-option -g status-position top
+set-option -g status-left-length 90
+set-option -g status-right-length 90
+
+
+set -g @tpm_plugins '              \
+  tmux-plugins/tpm                 \
+  tmux-plugins/tmux-yank           \
+  tmux-plugins/tmux-open           \
+  tmux-plugins/tmux-resurrect      \
+  tmux-plugins/tmux-battery        \
+  tmux-plugins/tmux-online-status  \
+  tmux-plugins/tmux-cpu            \
+  tmux-plugins/tmux-pain-control   \
+  tmux-plugins/tmux-sidebar        \
+  seebi/tmux-colors-solarized      \
+  nhdaly/tmux-scroll-copy-mode     \
+'
+
+
+run-shell '~/.tmux/plugins/tpm/tpm'
+# センタライズ（主にウィンドウ番号など）
+set-option -g status-justify centre
+# 最左に表示
+set-option -g status-left '#H:[#P]'
+# マウス操作ができるようにする
+# set-option -g mouse on # 2.1以上
+# 2.0以下
+set-option -g mouse-resize-pane on
+set-option -g mouse-select-pane on
+set-option -g mouse-select-window on
+set-option -g mode-mouse on
+# クリップボード対応
+set-window-option -g mode-keys vi
+bind ^y copy-mode
+bind-key -t vi-copy V select-line
+bind-key -t vi-copy v begin-selection
+bind-key -t vi-copy C-v begin-selection
+bind-key -t vi-copy Enter copy-pipe "nc localhost 8377"

@@ -1,0 +1,33 @@
+---
+# tasks file for ansible-role-tmux
+
+- apt: pkg=python-apt
+- apt_repository: repo='ppa:pi-rho/dev'
+
+- name: install tmux
+  become: yes
+  apt: pkg={{ item }} state=installed update_cache=yes
+  tags: [packages]
+  with_items:
+    - python-software-properties
+    - software-properties-common
+    - tmux=2.0-1~ppa1~t
+    - git
+
+# - name: nginx location config file directory
+#   file: path=~/.tmux/plugins/tpm state=directory owner=vagrant group=vagrant mode=0755
+
+- name: Git clone tpm
+  git:
+    repo: 'https://github.com/tmux-plugins/tpm'
+    dest: '~/.tmux/plugins/tpm'
+  become: no
+
+- name: set template .tmux.conf file to vagrant home
+  template: src=tmux.conf.j2 dest=~vagrant/.tmux.conf owner=vagrant group=vagrant mode="u=rw,g=r,o=r"
+#
+# - name: source ~/.zshrc
+#   shell: source ~/.zshrc
+#   become: no
+#
+
