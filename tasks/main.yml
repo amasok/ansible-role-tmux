@@ -1,33 +1,49 @@
 ---
-# tasks file for ansible-role-tmux
-
-- apt: pkg=python-apt
-- apt_repository: repo='ppa:pi-rho/dev'
-
-- name: install tmux
+- name: Install tmux packages
   become: yes
-  apt: pkg={{ item }} state=installed update_cache=yes
-  tags: [packages]
+  yum: name={{ item }} state=present
   with_items:
-    - python-software-properties
-    - software-properties-common
-    - tmux=2.0-1~ppa1~t
-    - git
+    - libevent-devel
+    - glibc-static
+    - ncurses-devel
 
-# - name: nginx location config file directory
-#   file: path=~/.tmux/plugins/tpm state=directory owner=vagrant group=vagrant mode=0755
+- name: Get latest tmux version
+  shell: >
+    curl -sI https://github.com/tmux/tmux/releases/latest | awk -F'/' '/^Location:/{print $NF}'
+  register: tmux_latest_version
+
+- name: Download latest tmux
+  become: yes
+  get_url: url=https://github.com/tmux/tmux/releases/download/{{ tmux_latest_version.stdout }}/tmux-{{ tmux_latest_version.stdout }}.tar.gz dest=/tmp/tmux-{{ tmux_latest_version.stdout }}.tar.gz
+  register: download_tmux
+
+- name: Extract tmux
+  become: yes
+  command: tar zxvf /tmp/tmux-{{ tmux_latest_version.stdout }}.tar.gz chdir=/tmp/
+
+- name: comfigure tmux
+  command: chdir=/tmp/tmux-{{ tmux_latest_version.stdout }} ./configure  --prefix=/usr/local/tmux-{{ tmux_latest_version.stdout }}
+
+- name: make tmux
+  command: chdir=/tmp/tmux-{{ tmux_latest_version.stdout }} make
+
+- name: make install tmux
+  command: chdir=/tmp/tmux-{{ tmux_latest_version.stdout }} make install
 
 - name: Git clone tpm
+  become: yes
+  become_user: "{{ user.name | default(ansible_env.USER) }}"
   git:
     repo: 'https://github.com/tmux-plugins/tpm'
     dest: '~/.tmux/plugins/tpm'
-  become: no
 
-- name: set template .tmux.conf file to vagrant home
-  template: src=tmux.conf.j2 dest=~vagrant/.tmux.conf owner=vagrant group=vagrant mode="u=rw,g=r,o=r"
-#
-# - name: source ~/.zshrc
-#   shell: source ~/.zshrc
-#   become: no
-#
+- name: set template .tmux.conf file to home
+  become: yes
+  become_user: "{{ user.name | default(ansible_env.USER) }}"
+  template: src=tmux.conf.j2 dest=~{{ user.name }}/.tmux.conf owner={{ user.name }} group={{ user.name }} mode="u=rw,g=r,o=r"
 
+- name: Add .zshrc tmux path
+  lineinfile:
+    dest=~{{ user.name }}/.zshrc
+    line="export PATH=$PATH:/usr/local/tmux-{{ tmux_latest_version.stdout }}/bin"
+    insertbefore=BOF state=present
